@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -20,22 +21,27 @@ const observedDataPointSchema = z.object({
 const formSchema = z.object({
   N: z.coerce.number().int().positive("Population (N) must be a positive integer"),
   R0: z.coerce.number().int().positive("Initial spread (R0) must be a positive integer"),
-  observedData: z.array(observedDataPointSchema).min(0)
-    .refine(
-      (data, ctx) => {
-        const { N } = ctx.parent;
-        if (N === undefined) return true; // N might not be parsed yet
-        return data.every(p => p.value <= N);
-      },
-      {
-        message: "Observed spread values cannot exceed Total Population (N)",
-        // No specific path here, as it's an array-level validation.
-        // Individual field errors for value > N can also be added if needed.
-      }
-    ),
-}).refine(data => data.R0 < data.N, {
-  message: "Initial spread (R0) must be less than Total Population (N)",
-  path: ["R0"],
+  observedData: z.array(observedDataPointSchema).min(0),
+}).superRefine((values, ctx) => {
+  // Validate R0 < N
+  if (values.R0 >= values.N) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Initial spread (R0) must be less than Total Population (N)",
+      path: ["R0"],
+    });
+  }
+
+  // Validate observedData points: each value must be <= N
+  values.observedData.forEach((point, index) => {
+    if (point.value > values.N) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Value cannot exceed Total Population (N: ${values.N})`,
+        path: [`observedData`, index, "value"],
+      });
+    }
+  });
 });
 
 
@@ -60,22 +66,10 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
     name: "observedData",
   });
 
+  // Zod validation via zodResolver should handle all checks before this is called.
+  // The previous manual validation block is no longer needed here.
   const handleFormSubmit = (values: RumorSimFormValues) => {
-    // Additional check for observed values against N, as refine context might be tricky
-    const N = values.N;
-    let valid = true;
-    values.observedData.forEach((point, index) => {
-      if (point.value > N) {
-        form.setError(`observedData.${index}.value`, {
-          type: 'manual',
-          message: `Cannot exceed N (${N})`
-        });
-        valid = false;
-      }
-    });
-    if (valid) {
-      onSubmit(values);
-    }
+    onSubmit(values);
   };
 
 
