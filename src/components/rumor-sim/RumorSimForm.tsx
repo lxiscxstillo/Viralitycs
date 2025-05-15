@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from 'lucide-react';
 import type { RumorSimFormValues, ObservedDataPoint } from './types';
 
@@ -21,9 +22,9 @@ const observedDataPointSchema = z.object({
 const formSchema = z.object({
   N: z.coerce.number().int().positive("Población (N) debe ser un entero positivo"),
   R0: z.coerce.number().int().positive("Propagación inicial (R0) debe ser un entero positivo"),
+  timeUnit: z.string().min(1, "Debe seleccionar una unidad de tiempo"),
   observedData: z.array(observedDataPointSchema).min(0),
 }).superRefine((values, ctx) => {
-  // Validate R0 < N
   if (values.R0 >= values.N) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -31,8 +32,6 @@ const formSchema = z.object({
       path: ["R0"],
     });
   }
-
-  // Validate observedData points: each value must be <= N
   values.observedData.forEach((point, index) => {
     if (point.value > values.N) {
       ctx.addIssue({
@@ -57,6 +56,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
     defaultValues: defaultValues || {
       N: 1000,
       R0: 1,
+      timeUnit: 'días',
       observedData: [{ time: 1, value: 10 }, {time: 2, value: 50}],
     },
   });
@@ -66,21 +66,18 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
     name: "observedData",
   });
 
-  const handleFormSubmit = (values: RumorSimFormValues) => {
-    onSubmit(values);
-  };
-
+  const selectedTimeUnit = form.watch("timeUnit");
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card className="shadow-xl bg-card/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-2xl text-primary">Parámetros de Entrada</CardTitle>
             <CardDescription>Establece las condiciones iniciales y los datos observados para la simulación.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
               <FormField
                 control={form.control}
                 name="N"
@@ -108,9 +105,34 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                 )}
               />
             </div>
+             <FormField
+                control={form.control}
+                name="timeUnit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor="timeUnit" className="text-lg">Unidad de Tiempo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger id="timeUnit" className="text-base">
+                          <SelectValue placeholder="Selecciona unidad" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="segundos">Segundos</SelectItem>
+                        <SelectItem value="minutos">Minutos</SelectItem>
+                        <SelectItem value="horas">Horas</SelectItem>
+                        <SelectItem value="días">Días</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
             <div>
-              <h3 className="text-xl font-semibold mb-3 text-foreground">Puntos de Datos Observados (t, R)</h3>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">
+                Puntos de Datos Observados (t, R) - Tiempo en {selectedTimeUnit || 'unidades'}
+              </h3>
               <div className="space-y-4 max-h-60 overflow-y-auto pr-2 rounded-md border border-input p-4 bg-background/50">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-md shadow-sm">
@@ -124,7 +146,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                             <Input
                               id={`observedData.${index}.time`}
                               type="number"
-                              placeholder="Tiempo"
+                              placeholder={`Tiempo (${selectedTimeUnit || 't'})`}
                               step="any"
                               {...timeField}
                               className="text-sm"
@@ -144,7 +166,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                             <Input
                               id={`observedData.${index}.value`}
                               type="number"
-                              placeholder="Propagación"
+                              placeholder="Propagación (R)"
                               step="any"
                               {...valueField}
                               className="text-sm"

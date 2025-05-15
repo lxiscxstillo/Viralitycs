@@ -22,15 +22,16 @@ import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 interface RumorChartProps {
   data: CalculatedDataPoint[];
   N_population: number | null;
+  timeUnit: string;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, timeUnit }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="p-3 bg-background/80 border border-border rounded-md shadow-lg text-foreground text-sm">
-        <p className="label font-semibold">{`Tiempo: ${label}`}</p>
+        <p className="label font-semibold">{`Tiempo: ${label} ${timeUnit || ''}`.trim()}</p>
         {payload.map((entry: any) => (
-          entry.value !== undefined && entry.value !== null && ( // Only display if value exists
+          entry.value !== undefined && entry.value !== null && (
             <p key={entry.name} style={{ color: entry.color }}>
               {`${entry.name}: ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}`}
             </p>
@@ -43,7 +44,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 
-export function RumorChart({ data, N_population }: RumorChartProps) {
+export function RumorChart({ data, N_population, timeUnit }: RumorChartProps) {
   const [xDomain, setXDomain] = useState<[number | 'auto', number | 'auto']>(['auto', 'auto']);
   const [originalXDomain, setOriginalXDomain] = useState<[number, number] | null>(null);
 
@@ -73,38 +74,35 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
     const [originalMin, originalMax] = originalXDomain;
 
     const currentRange = currentMax - currentMin;
-    // If current range is non-positive, reset or do nothing
     if (currentRange <= 0 && factor < 1) {
         if (originalMax - originalMin > 0) setXDomain(originalXDomain);
         return;
     }
 
-
-    const center = currentMin + currentRange / 2;
     let newRange = currentRange * factor;
+    const minAllowedRange = Math.max(0.01, (originalMax - originalMin) * 0.001); 
 
-    const minAllowedRange = Math.max(0.01, (originalMax - originalMin) * 0.001); // Minimum time span visible, at least 0.01 or 0.1% of original
-
-    if (factor < 1) { // Zooming in
-      if (currentRange <= minAllowedRange && newRange < currentRange) { // Already at max zoom or trying to go smaller
-        newRange = currentRange; // effectively do nothing or set to minAllowedRange
-         if(currentRange < minAllowedRange) newRange = minAllowedRange; // ensure it's at least minAllowedRange
+    if (factor < 1) { 
+      if (currentRange <= minAllowedRange && newRange < currentRange) {
+        newRange = currentRange; 
+         if(currentRange < minAllowedRange) newRange = minAllowedRange;
       }
       if (newRange < minAllowedRange) newRange = minAllowedRange;
     }
 
-    if (factor > 1) { // Zooming out
+    if (factor > 1) {
       if (newRange > (originalMax - originalMin)) {
         newRange = originalMax - originalMin;
       }
     }
     
-    if (newRange <= 0) newRange = minAllowedRange; // Prevent zero or negative range
+    if (newRange <= 0) newRange = minAllowedRange;
 
     let newMin = center - newRange / 2;
     let newMax = center + newRange / 2;
+    const center = currentMin + currentRange / 2;
 
-    // Adjust newMin and newMax to stay within original bounds
+
     if (newMin < originalMin) {
       newMin = originalMin;
       newMax = Math.min(originalMin + newRange, originalMax);
@@ -114,23 +112,20 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
       newMin = Math.max(originalMax - newRange, originalMin);
     }
     
-    // Ensure newMin < newMax after all adjustments
     if (newMin >= newMax) {
-      // If somehow inverted or collapsed, try to set a small valid range or revert
       if (originalMax - originalMin > minAllowedRange) {
         newMin = originalMin;
         newMax = Math.min(originalMin + minAllowedRange, originalMax);
-      } else { // original range itself is tiny or zero
+      } else { 
         newMin = originalMin;
         newMax = originalMax;
       }
     }
-    // Final check, if newMin is still >= newMax, reset to original (should be rare)
      if (newMin >= newMax && originalMin < originalMax) {
         setXDomain(originalXDomain);
         return;
-    } else if (newMin >= newMax) { // If original data has no span
-        setXDomain([originalMin, originalMax]); // Show the single point or whatever original is
+    } else if (newMin >= newMax) { 
+        setXDomain([originalMin, originalMax]);
         return;
     }
 
@@ -150,7 +145,7 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
 
   const isZoomed = useMemo(() => {
     if (!originalXDomain || xDomain[0] === 'auto' || xDomain[1] === 'auto') return false;
-    const tolerance = 1e-6 * (originalXDomain[1] - originalXDomain[0]); // Relative tolerance
+    const tolerance = 1e-6 * (originalXDomain[1] - originalXDomain[0]);
     return Math.abs(xDomain[0] - originalXDomain[0]) > tolerance || Math.abs(xDomain[1] - originalXDomain[1]) > tolerance;
   }, [xDomain, originalXDomain]);
 
@@ -167,9 +162,8 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
      return (xDomain[0] > originalXDomain[0] + tolerance) || (xDomain[1] < originalXDomain[1] - tolerance);
   }, [xDomain, originalXDomain]);
 
-
-  // Determine Y-axis domain
   const yDomainMax = N_population ? N_population * 1.1 : 'auto';
+  const xAxisLabel = `Tiempo (${timeUnit || 'unidades'})`;
 
   if (!data || data.length === 0) {
     return (
@@ -192,7 +186,7 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
             <CardTitle className="text-2xl text-primary">Gráfico de Propagación</CardTitle>
             <CardDescription>Comparación de la propagación de rumores analítica, numérica y observada.</CardDescription>
           </div>
-          {originalXDomain && (originalXDomain[0] < originalXDomain[1]) && ( // Only show zoom if there's a range
+          {originalXDomain && (originalXDomain[0] < originalXDomain[1]) && (
             <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
               <Button variant="outline" size="icon" onClick={handleZoomIn} title="Acercar" disabled={!canZoomIn}>
                 <ZoomIn className="h-4 w-4" />
@@ -209,13 +203,13 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+          <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
             <XAxis 
               dataKey="time" 
               stroke="hsl(var(--muted-foreground))" 
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              label={{ value: "Tiempo (t)", position: "insideBottomRight", offset: -5, fill: 'hsl(var(--muted-foreground))' }}
+              label={{ value: xAxisLabel, position: "insideBottom", offset: -15, fill: 'hsl(var(--muted-foreground))' }}
               type="number"
               domain={xDomain}
               allowDataOverflow={true}
@@ -227,24 +221,24 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
               label={{ value: "Personas Informadas (R)", angle: -90, position: "insideLeft", fill: 'hsl(var(--muted-foreground))' }}
               allowDataOverflow={true}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip timeUnit={timeUnit} />} />
             <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
             
             <Line
               type="monotone"
               dataKey="analytical"
               name="Solución Analítica"
-              stroke="hsl(var(--chart-1))" // Neon Green
+              stroke="hsl(var(--chart-1))"
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 6, fill: 'hsl(var(--chart-1))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-              connectNulls // Connect lines even if there are null/undefined points in between from zooming
+              connectNulls
             />
             <Line
               type="monotone"
               dataKey="numerical"
               name="Numérica (Euler)"
-              stroke="hsl(var(--chart-2))" // Neon Blue
+              stroke="hsl(var(--chart-2))"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 6, fill: 'hsl(var(--chart-2))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
@@ -254,7 +248,7 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
             <Scatter
               name="Datos Observados"
               dataKey="observed"
-              fill="hsl(var(--chart-3))" // Neon Cyan
+              fill="hsl(var(--chart-3))"
               shape="circle"
             />
           </LineChart>
@@ -263,5 +257,3 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
     </Card>
   );
 }
-
-    

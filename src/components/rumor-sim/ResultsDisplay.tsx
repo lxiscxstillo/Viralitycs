@@ -7,12 +7,15 @@ import { Badge } from '@/components/ui/badge';
 
 interface ResultsDisplayProps {
   kValue: number | null;
+  timeUnit: string;
 }
 
-export function ResultsDisplay({ kValue }: ResultsDisplayProps) {
+export function ResultsDisplay({ kValue, timeUnit }: ResultsDisplayProps) {
   if (kValue === null) {
     return null;
   }
+
+  const unitText = timeUnit === 'días' ? 'día' : timeUnit.slice(0, -1);
 
   return (
     <Card className="shadow-xl bg-card/80 backdrop-blur-sm">
@@ -29,8 +32,10 @@ export function ResultsDisplay({ kValue }: ResultsDisplayProps) {
           ) : (
             <p className="text-muted-foreground">Aún no calculado.</p>
           )}
+           <p className="text-sm text-muted-foreground mt-1">
+              (por {unitText})
+            </p>
         </div>
-        {/* Additional results can be displayed here if needed */}
       </CardContent>
     </Card>
   );

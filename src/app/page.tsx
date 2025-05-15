@@ -7,7 +7,7 @@ import { RumorSimForm } from '@/components/rumor-sim/RumorSimForm';
 import { ResultsDisplay } from '@/components/rumor-sim/ResultsDisplay';
 import { RumorChart } from '@/components/rumor-sim/RumorChart';
 import type { RumorSimFormValues, CalculatedDataPoint, ObservedDataPoint } from '@/components/rumor-sim/types';
-import { estimateKFlow } from '@/ai/flows/estimateK'; // Assuming this path is correct for AI flow
+import { estimateKFlow } from '@/ai/flows/estimateK';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 
@@ -16,6 +16,7 @@ export default function HomePage() {
   const [chartData, setChartData] = useState<CalculatedDataPoint[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [currentN, setCurrentN] = useState<number | null>(null);
+  const [currentTimeUnit, setCurrentTimeUnit] = useState<string>('días');
   const { toast } = useToast();
 
   const handleCalculate = async (formData: RumorSimFormValues) => {
@@ -23,6 +24,7 @@ export default function HomePage() {
     setKValue(null);
     setChartData([]);
     setCurrentN(formData.N);
+    setCurrentTimeUnit(formData.timeUnit);
 
     try {
       const { k } = await estimateKFlow({
@@ -32,21 +34,19 @@ export default function HomePage() {
       });
       setKValue(k);
 
-      // Determine time range for simulation
-      let maxTime = 50; // Default max time
+      let maxTime = 50; 
       if (formData.observedData.length > 0) {
         maxTime = Math.max(...formData.observedData.map(p => p.time), 0) * 1.5;
       }
-      maxTime = Math.max(maxTime, 10); // Ensure a minimum simulation time
+      maxTime = Math.max(maxTime, 10); 
       
-      const timeStep = Math.max(0.01, maxTime / 500); // Dynamic time step, at least 500 points
+      const timeStep = Math.max(0.01, maxTime / 500);
 
       const analyticalSolution: CalculatedDataPoint[] = [];
       const numericalSolutionPoints: { time: number, value: number }[] = [];
 
-      // Analytical Solution
       const A = (formData.N - formData.R0) / formData.R0;
-      if (formData.R0 <= 0 || A <= 0) { // R0 must be > 0 and < N
+      if (formData.R0 <= 0 || A <= 0) {
          toast({
           title: "Error de Entrada",
           description: "R0 debe ser positivo y menor que N para la solución analítica.",
@@ -59,18 +59,15 @@ export default function HomePage() {
         }
       }
       
-
-      // Numerical Solution (Euler's Method)
       let R_n = formData.R0;
       numericalSolutionPoints.push({ time: 0, value: R_n });
       for (let t = 0; t < maxTime; t += timeStep) {
         const dR_dt = k * R_n * (1 - R_n / formData.N);
         R_n = R_n + timeStep * dR_dt;
-        R_n = Math.max(0, Math.min(R_n, formData.N)); // Clamp R_n
+        R_n = Math.max(0, Math.min(R_n, formData.N));
         numericalSolutionPoints.push({ time: t + timeStep, value: R_n });
       }
       
-      // Combine data for chart
       const combinedData: CalculatedDataPoint[] = [];
       const allTimes = new Set<number>([
         ...analyticalSolution.map(p => p.time),
@@ -83,7 +80,7 @@ export default function HomePage() {
       sortedTimes.forEach(t => {
         const analyticalPoint = analyticalSolution.find(p => Math.abs(p.time - t) < timeStep / 2);
         const numericalPoint = numericalSolutionPoints.find(p => Math.abs(p.time - t) < timeStep / 2);
-        const observedPoint = formData.observedData.find(p => Math.abs(p.time - t) < timeStep / 2); // Find closest, might need better matching
+        const observedPoint = formData.observedData.find(p => Math.abs(p.time - t) < timeStep / 2);
 
         combinedData.push({
           time: t,
@@ -93,7 +90,6 @@ export default function HomePage() {
         });
       });
       
-      // Ensure observed points are distinctly added if their times don't align perfectly with simulation steps
       formData.observedData.forEach(obs => {
         if (!combinedData.some(cd => cd.time === obs.time && cd.observed === obs.value)) {
           const existingEntry = combinedData.find(cd => cd.time === obs.time);
@@ -106,11 +102,10 @@ export default function HomePage() {
       });
       combinedData.sort((a,b) => a.time - b.time);
 
-
       setChartData(combinedData);
       toast({
         title: "Cálculo Completo",
-        description: `Tasa de propagación k estimada: ${k.toFixed(4)}`,
+        description: `Tasa de propagación k estimada: ${k.toFixed(4)} (por ${formData.timeUnit === 'días' ? 'día' : formData.timeUnit.slice(0,-1)})`,
       });
 
     } catch (error) {
@@ -151,8 +146,8 @@ export default function HomePage() {
           </div>
           
           <div className="lg:col-span-2 space-y-8">
-            {kValue !== null && <ResultsDisplay kValue={kValue} />}
-            <RumorChart data={chartData} N_population={currentN} />
+            {kValue !== null && <ResultsDisplay kValue={kValue} timeUnit={currentTimeUnit} />}
+            <RumorChart data={chartData} N_population={currentN} timeUnit={currentTimeUnit} />
           </div>
         </div>
       </main>

@@ -13,5 +13,6 @@ export interface CalculatedDataPoint {
 export interface RumorSimFormValues {
   N: number; // Total population
   R0: number; // Initial number of people who know the rumor
+  timeUnit: string; // Unit of time (e.g., 'segundos', 'minutos', 'horas', 'días')
   observedData: ObservedDataPoint[];
 }
