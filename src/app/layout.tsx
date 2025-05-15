@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
   title: 'RumorSim',
-  description: 'Interactive Web App for Rumor Propagation Modeling',
+  description: 'Aplicación Web Interactiva para Modelar la Propagación de Rumores',
 };
 
 export default function RootLayout({
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="es" className="dark">
       <body className={`${GeistSans.variable} ${GeistMono.variable} font-sans antialiased`}>
         {children}
         <Toaster />

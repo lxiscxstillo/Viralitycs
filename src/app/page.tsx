@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -47,8 +48,8 @@ export default function HomePage() {
       const A = (formData.N - formData.R0) / formData.R0;
       if (formData.R0 <= 0 || A <= 0) { // R0 must be > 0 and < N
          toast({
-          title: "Input Error",
-          description: "R0 must be positive and less than N for analytical solution.",
+          title: "Error de Entrada",
+          description: "R0 debe ser positivo y menor que N para la solución analítica.",
           variant: "destructive",
         });
       } else {
@@ -108,15 +109,15 @@ export default function HomePage() {
 
       setChartData(combinedData);
       toast({
-        title: "Calculation Complete",
-        description: `Spread rate k estimated: ${k.toFixed(4)}`,
+        title: "Cálculo Completo",
+        description: `Tasa de propagación k estimada: ${k.toFixed(4)}`,
       });
 
     } catch (error) {
       console.error("Calculation error:", error);
       toast({
         title: "Error",
-        description: "Failed to perform calculations. Check console for details.",
+        description: "No se pudieron realizar los cálculos. Revisa la consola para más detalles.",
         variant: "destructive",
       });
       setKValue(null);
@@ -139,7 +140,7 @@ export default function HomePage() {
           RumorSim
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
-          Model and Visualize Rumor Propagation Dynamics
+          Modela y Visualiza la Dinámica de Propagación de Rumores
         </p>
       </header>
 
@@ -157,8 +158,8 @@ export default function HomePage() {
       </main>
 
       <footer className="mt-12 pt-8 border-t border-border text-center text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} RumorSim. Built with Next.js and Tailwind CSS.</p>
-        <p className="mt-1">Explore the dynamics of information spread.</p>
+        <p>&copy; {new Date().getFullYear()} RumorSim. Creado con Next.js y Tailwind CSS.</p>
+        <p className="mt-1">Explora la dinámica de la propagación de información.</p>
       </footer>
     </div>
   );

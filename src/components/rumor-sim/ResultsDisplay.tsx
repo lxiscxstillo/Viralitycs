@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -16,17 +17,17 @@ export function ResultsDisplay({ kValue }: ResultsDisplayProps) {
   return (
     <Card className="shadow-xl bg-card/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-2xl text-primary">Simulation Results</CardTitle>
+        <CardTitle className="text-2xl text-primary">Resultados de la Simulación</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h4 className="text-lg font-semibold text-primary-foreground">Estimated Spread Rate (k)</h4>
+          <h4 className="text-lg font-semibold text-foreground">Tasa de Propagación Estimada (k)</h4>
           {kValue !== null ? (
              <Badge variant="secondary" className="text-2xl font-bold bg-accent text-accent-foreground p-3 rounded-md shadow-md">
               {kValue.toFixed(4)}
             </Badge>
           ) : (
-            <p className="text-muted-foreground">Not calculated yet.</p>
+            <p className="text-muted-foreground">Aún no calculado.</p>
           )}
         </div>
         {/* Additional results can be displayed here if needed */}

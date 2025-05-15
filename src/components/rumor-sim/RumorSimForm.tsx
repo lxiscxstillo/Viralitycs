@@ -14,20 +14,20 @@ import { Trash2, PlusCircle } from 'lucide-react';
 import type { RumorSimFormValues, ObservedDataPoint } from './types';
 
 const observedDataPointSchema = z.object({
-  time: z.coerce.number().min(0, "Time must be non-negative"),
-  value: z.coerce.number().min(0, "Value must be non-negative"),
+  time: z.coerce.number().min(0, "El tiempo no debe ser negativo"),
+  value: z.coerce.number().min(0, "El valor no debe ser negativo"),
 });
 
 const formSchema = z.object({
-  N: z.coerce.number().int().positive("Population (N) must be a positive integer"),
-  R0: z.coerce.number().int().positive("Initial spread (R0) must be a positive integer"),
+  N: z.coerce.number().int().positive("Población (N) debe ser un entero positivo"),
+  R0: z.coerce.number().int().positive("Propagación inicial (R0) debe ser un entero positivo"),
   observedData: z.array(observedDataPointSchema).min(0),
 }).superRefine((values, ctx) => {
   // Validate R0 < N
   if (values.R0 >= values.N) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Initial spread (R0) must be less than Total Population (N)",
+      message: "La propagación inicial (R0) debe ser menor que la Población Total (N)",
       path: ["R0"],
     });
   }
@@ -37,7 +37,7 @@ const formSchema = z.object({
     if (point.value > values.N) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `Value cannot exceed Total Population (N: ${values.N})`,
+        message: `El valor no puede exceder la Población Total (N: ${values.N})`,
         path: [`observedData`, index, "value"],
       });
     }
@@ -66,8 +66,6 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
     name: "observedData",
   });
 
-  // Zod validation via zodResolver should handle all checks before this is called.
-  // The previous manual validation block is no longer needed here.
   const handleFormSubmit = (values: RumorSimFormValues) => {
     onSubmit(values);
   };
@@ -78,8 +76,8 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
         <Card className="shadow-xl bg-card/80 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-2xl text-primary">Input Parameters</CardTitle>
-            <CardDescription>Set the initial conditions and observed data for the simulation.</CardDescription>
+            <CardTitle className="text-2xl text-primary">Parámetros de Entrada</CardTitle>
+            <CardDescription>Establece las condiciones iniciales y los datos observados para la simulación.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,9 +86,9 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                 name="N"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="N" className="text-lg">Total Population (N)</FormLabel>
+                    <FormLabel htmlFor="N" className="text-lg">Población Total (N)</FormLabel>
                     <FormControl>
-                      <Input id="N" type="number" placeholder="e.g., 1000" {...field} className="text-base"/>
+                      <Input id="N" type="number" placeholder="ej., 1000" {...field} className="text-base"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -101,9 +99,9 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                 name="R0"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="R0" className="text-lg">Initial Spread (R₀)</FormLabel>
+                    <FormLabel htmlFor="R0" className="text-lg">Propagación Inicial (R₀)</FormLabel>
                     <FormControl>
-                      <Input id="R0" type="number" placeholder="e.g., 1" {...field} className="text-base"/>
+                      <Input id="R0" type="number" placeholder="ej., 1" {...field} className="text-base"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -112,7 +110,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
             </div>
 
             <div>
-              <h3 className="text-xl font-semibold mb-3 text-primary-foreground">Observed Data Points (t, R)</h3>
+              <h3 className="text-xl font-semibold mb-3 text-foreground">Puntos de Datos Observados (t, R)</h3>
               <div className="space-y-4 max-h-60 overflow-y-auto pr-2 rounded-md border border-input p-4 bg-background/50">
                 {fields.map((field, index) => (
                   <div key={field.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-md shadow-sm">
@@ -121,12 +119,12 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                       name={`observedData.${index}.time`}
                       render={({ field: timeField }) => (
                         <FormItem className="flex-1">
-                          <FormLabel htmlFor={`observedData.${index}.time`} className="sr-only">Time (t)</FormLabel>
+                          <FormLabel htmlFor={`observedData.${index}.time`} className="sr-only">Tiempo (t)</FormLabel>
                            <FormControl>
                             <Input
                               id={`observedData.${index}.time`}
                               type="number"
-                              placeholder="Time"
+                              placeholder="Tiempo"
                               step="any"
                               {...timeField}
                               className="text-sm"
@@ -141,12 +139,12 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                       name={`observedData.${index}.value`}
                       render={({ field: valueField }) => (
                         <FormItem className="flex-1">
-                          <FormLabel htmlFor={`observedData.${index}.value`} className="sr-only">Rumor Spread (R)</FormLabel>
+                          <FormLabel htmlFor={`observedData.${index}.value`} className="sr-only">Propagación (R)</FormLabel>
                           <FormControl>
                             <Input
                               id={`observedData.${index}.value`}
                               type="number"
-                              placeholder="Spread"
+                              placeholder="Propagación"
                               step="any"
                               {...valueField}
                               className="text-sm"
@@ -162,7 +160,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                       size="icon"
                       onClick={() => remove(index)}
                       className="text-destructive hover:text-destructive/80"
-                      aria-label="Remove data point"
+                      aria-label="Eliminar punto de dato"
                     >
                       <Trash2 className="h-5 w-5" />
                     </Button>
@@ -176,13 +174,13 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                 onClick={() => append({ time: 0, value: 0 })}
                 className="mt-4 border-primary text-primary hover:bg-primary/10"
               >
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Data Point
+                <PlusCircle className="mr-2 h-4 w-4" /> Añadir Punto de Dato
               </Button>
             </div>
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isCalculating} className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground">
-              {isCalculating ? 'Calculating...' : 'Calculate & Simulate'}
+              {isCalculating ? 'Calculando...' : 'Calcular y Simular'}
             </Button>
           </CardFooter>
         </Card>
