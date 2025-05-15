@@ -2,6 +2,7 @@
 "use client";
 
 import type * as React from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,6 +16,8 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { CalculatedDataPoint } from './types';
+import { Button } from '@/components/ui/button';
+import { ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 
 interface RumorChartProps {
   data: CalculatedDataPoint[];
@@ -27,9 +30,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="p-3 bg-background/80 border border-border rounded-md shadow-lg text-foreground text-sm">
         <p className="label font-semibold">{`Tiempo: ${label}`}</p>
         {payload.map((entry: any) => (
-          <p key={entry.name} style={{ color: entry.color }}>
-            {`${entry.name}: ${entry.value?.toFixed(2)}`}
-          </p>
+          entry.value !== undefined && entry.value !== null && ( // Only display if value exists
+            <p key={entry.name} style={{ color: entry.color }}>
+              {`${entry.name}: ${typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}`}
+            </p>
+          )
         ))}
       </div>
     );
@@ -39,6 +44,133 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 
 export function RumorChart({ data, N_population }: RumorChartProps) {
+  const [xDomain, setXDomain] = useState<[number | 'auto', number | 'auto']>(['auto', 'auto']);
+  const [originalXDomain, setOriginalXDomain] = useState<[number, number] | null>(null);
+
+  const calculatedOriginalXDomain = useMemo(() => {
+    if (!data || data.length === 0) {
+      return null;
+    }
+    const times = data.map(p => p.time).filter(t => typeof t === 'number');
+    if (times.length === 0) return null;
+    return [Math.min(...times), Math.max(...times)] as [number, number];
+  }, [data]);
+
+  useEffect(() => {
+    if (calculatedOriginalXDomain) {
+      setOriginalXDomain(calculatedOriginalXDomain);
+      setXDomain(calculatedOriginalXDomain);
+    } else {
+      setXDomain(['auto', 'auto']);
+      setOriginalXDomain(null);
+    }
+  }, [calculatedOriginalXDomain]);
+
+  const handleZoom = (factor: number) => {
+    if (!originalXDomain || xDomain[0] === 'auto' || xDomain[1] === 'auto') return;
+
+    const [currentMin, currentMax] = xDomain as [number, number];
+    const [originalMin, originalMax] = originalXDomain;
+
+    const currentRange = currentMax - currentMin;
+    // If current range is non-positive, reset or do nothing
+    if (currentRange <= 0 && factor < 1) {
+        if (originalMax - originalMin > 0) setXDomain(originalXDomain);
+        return;
+    }
+
+
+    const center = currentMin + currentRange / 2;
+    let newRange = currentRange * factor;
+
+    const minAllowedRange = Math.max(0.01, (originalMax - originalMin) * 0.001); // Minimum time span visible, at least 0.01 or 0.1% of original
+
+    if (factor < 1) { // Zooming in
+      if (currentRange <= minAllowedRange && newRange < currentRange) { // Already at max zoom or trying to go smaller
+        newRange = currentRange; // effectively do nothing or set to minAllowedRange
+         if(currentRange < minAllowedRange) newRange = minAllowedRange; // ensure it's at least minAllowedRange
+      }
+      if (newRange < minAllowedRange) newRange = minAllowedRange;
+    }
+
+    if (factor > 1) { // Zooming out
+      if (newRange > (originalMax - originalMin)) {
+        newRange = originalMax - originalMin;
+      }
+    }
+    
+    if (newRange <= 0) newRange = minAllowedRange; // Prevent zero or negative range
+
+    let newMin = center - newRange / 2;
+    let newMax = center + newRange / 2;
+
+    // Adjust newMin and newMax to stay within original bounds
+    if (newMin < originalMin) {
+      newMin = originalMin;
+      newMax = Math.min(originalMin + newRange, originalMax);
+    }
+    if (newMax > originalMax) {
+      newMax = originalMax;
+      newMin = Math.max(originalMax - newRange, originalMin);
+    }
+    
+    // Ensure newMin < newMax after all adjustments
+    if (newMin >= newMax) {
+      // If somehow inverted or collapsed, try to set a small valid range or revert
+      if (originalMax - originalMin > minAllowedRange) {
+        newMin = originalMin;
+        newMax = Math.min(originalMin + minAllowedRange, originalMax);
+      } else { // original range itself is tiny or zero
+        newMin = originalMin;
+        newMax = originalMax;
+      }
+    }
+    // Final check, if newMin is still >= newMax, reset to original (should be rare)
+     if (newMin >= newMax && originalMin < originalMax) {
+        setXDomain(originalXDomain);
+        return;
+    } else if (newMin >= newMax) { // If original data has no span
+        setXDomain([originalMin, originalMax]); // Show the single point or whatever original is
+        return;
+    }
+
+    setXDomain([newMin, newMax]);
+  };
+
+  const handleZoomIn = () => handleZoom(0.8);
+  const handleZoomOut = () => handleZoom(1.25);
+  
+  const handleResetZoom = () => {
+    if (originalXDomain) {
+      setXDomain(originalXDomain);
+    } else {
+      setXDomain(['auto', 'auto']);
+    }
+  };
+
+  const isZoomed = useMemo(() => {
+    if (!originalXDomain || xDomain[0] === 'auto' || xDomain[1] === 'auto') return false;
+    const tolerance = 1e-6 * (originalXDomain[1] - originalXDomain[0]); // Relative tolerance
+    return Math.abs(xDomain[0] - originalXDomain[0]) > tolerance || Math.abs(xDomain[1] - originalXDomain[1]) > tolerance;
+  }, [xDomain, originalXDomain]);
+
+  const canZoomIn = useMemo(() => {
+    if (!originalXDomain || xDomain[0] === 'auto' || xDomain[1] === 'auto') return false;
+    const currentRange = (xDomain[1] as number) - (xDomain[0] as number);
+    const minAllowedRange = Math.max(0.01, (originalXDomain[1] - originalXDomain[0]) * 0.001);
+    return currentRange > minAllowedRange;
+  }, [xDomain, originalXDomain]);
+
+  const canZoomOut = useMemo(() => {
+     if (!originalXDomain || xDomain[0] === 'auto' || xDomain[1] === 'auto') return false;
+     const tolerance = 1e-6 * (originalXDomain[1] - originalXDomain[0]);
+     return (xDomain[0] > originalXDomain[0] + tolerance) || (xDomain[1] < originalXDomain[1] - tolerance);
+  }, [xDomain, originalXDomain]);
+
+
+  // Determine Y-axis domain
+  const yDomainMax = N_population ? N_population * 1.1 : 'auto';
+
   if (!data || data.length === 0) {
     return (
        <Card className="shadow-xl bg-card/80 backdrop-blur-sm min-h-[400px] flex items-center justify-center">
@@ -51,16 +183,29 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
       </Card>
     );
   }
-  
-  // Determine Y-axis domain
-  const yDomainMax = N_population ? N_population * 1.1 : 'auto';
-
 
   return (
     <Card className="shadow-xl bg-card/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-2xl text-primary">Gráfico de Propagación</CardTitle>
-        <CardDescription>Comparación de la propagación de rumores analítica, numérica y observada.</CardDescription>
+        <div className="flex justify-between items-center gap-4">
+          <div className="flex-grow">
+            <CardTitle className="text-2xl text-primary">Gráfico de Propagación</CardTitle>
+            <CardDescription>Comparación de la propagación de rumores analítica, numérica y observada.</CardDescription>
+          </div>
+          {originalXDomain && (originalXDomain[0] < originalXDomain[1]) && ( // Only show zoom if there's a range
+            <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
+              <Button variant="outline" size="icon" onClick={handleZoomIn} title="Acercar" disabled={!canZoomIn}>
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleZoomOut} title="Alejar" disabled={!canZoomOut}>
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleResetZoom} title="Restablecer Zoom" disabled={!isZoomed}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
@@ -71,12 +216,16 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
               stroke="hsl(var(--muted-foreground))" 
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               label={{ value: "Tiempo (t)", position: "insideBottomRight", offset: -5, fill: 'hsl(var(--muted-foreground))' }}
+              type="number"
+              domain={xDomain}
+              allowDataOverflow={true}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))" 
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               domain={[0, yDomainMax]}
               label={{ value: "Personas Informadas (R)", angle: -90, position: "insideLeft", fill: 'hsl(var(--muted-foreground))' }}
+              allowDataOverflow={true}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
@@ -89,6 +238,7 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
               strokeWidth={2.5}
               dot={false}
               activeDot={{ r: 6, fill: 'hsl(var(--chart-1))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+              connectNulls // Connect lines even if there are null/undefined points in between from zooming
             />
             <Line
               type="monotone"
@@ -99,14 +249,13 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
               dot={false}
               activeDot={{ r: 6, fill: 'hsl(var(--chart-2))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
               strokeDasharray="5 5"
+              connectNulls
             />
             <Scatter
               name="Datos Observados"
               dataKey="observed"
               fill="hsl(var(--chart-3))" // Neon Cyan
               shape="circle"
-              // The Scatter component needs data where 'observed' is a value, not an array.
-              // The `data` prop should be formatted so each point has an `observed` value if it's an observed point.
             />
           </LineChart>
         </ResponsiveContainer>
@@ -114,3 +263,5 @@ export function RumorChart({ data, N_population }: RumorChartProps) {
     </Card>
   );
 }
+
+    
