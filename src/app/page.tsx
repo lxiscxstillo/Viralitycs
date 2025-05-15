@@ -132,7 +132,7 @@ export default function HomePage() {
               WebkitTextFillColor: 'transparent',
             }}
         >
-          VIRALITYCS
+          viralitycs
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Modela y Visualiza la Dinámica de Propagación de Rumores
@@ -153,7 +153,7 @@ export default function HomePage() {
       </main>
 
       <footer className="mt-12 pt-8 border-t border-border text-center text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} VIRALITYCS. Creado con Next.js y Tailwind CSS.</p>
+        <p>&copy; {new Date().getFullYear()} viralitycs. Creado con Next.js y Tailwind CSS.</p>
         <p className="mt-1">Explora la dinámica de la propagación de información.</p>
       </footer>
     </div>

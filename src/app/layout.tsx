@@ -5,7 +5,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'VIRALITYCS',
+  title: 'viralitycs',
   description: 'Aplicación Web Interactiva para Modelar la Propagación de Rumores',
 };
 
