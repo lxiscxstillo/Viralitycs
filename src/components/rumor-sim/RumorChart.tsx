@@ -203,13 +203,13 @@ export function RumorChart({ data, N_population, timeUnit }: RumorChartProps) {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={data} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
+          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 25 }}> {/* Increased top and bottom margin */}
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
             <XAxis 
               dataKey="time" 
               stroke="hsl(var(--muted-foreground))" 
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              label={{ value: xAxisLabel, position: "insideBottom", offset: -15, fill: 'hsl(var(--muted-foreground))' }}
+              label={{ value: xAxisLabel, position: "insideBottom", offset: -20, fill: 'hsl(var(--muted-foreground))' }} // Adjusted offset
               type="number"
               domain={xDomain}
               allowDataOverflow={true}
@@ -222,7 +222,7 @@ export function RumorChart({ data, N_population, timeUnit }: RumorChartProps) {
               allowDataOverflow={true}
             />
             <Tooltip content={<CustomTooltip timeUnit={timeUnit} />} />
-            <Legend wrapperStyle={{ color: 'hsl(var(--foreground))' }} />
+            <Legend verticalAlign="top" wrapperStyle={{ color: 'hsl(var(--foreground))', paddingBottom: 10 }} /> {/* Moved legend to top */}
             
             <Line
               type="monotone"
