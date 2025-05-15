@@ -36,7 +36,7 @@ const formSchema = z.object({
     if (point.value > values.N) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: `El valor no puede exceder la Población Total (N: ${values.N})`,
+        message: `El valor (R) no puede exceder la Población Total (N: ${values.N})`,
         path: [`observedData`, index, "value"],
       });
     }
@@ -85,7 +85,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                   <FormItem>
                     <FormLabel htmlFor="N" className="text-lg">Población Total (N)</FormLabel>
                     <FormControl>
-                      <Input id="N" type="number" placeholder="ej., 1000" {...field} className="text-base"/>
+                      <Input id="N" type="number" placeholder="ej., 1000 personas" {...field} className="text-base"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -98,7 +98,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                   <FormItem>
                     <FormLabel htmlFor="R0" className="text-lg">Propagación Inicial (R₀)</FormLabel>
                     <FormControl>
-                      <Input id="R0" type="number" placeholder="ej., 1" {...field} className="text-base"/>
+                      <Input id="R0" type="number" placeholder="ej., 1 persona" {...field} className="text-base"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -110,7 +110,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                 name="timeUnit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel htmlFor="timeUnit" className="text-lg">Unidad de Tiempo</FormLabel>
+                    <FormLabel htmlFor="timeUnit" className="text-lg">Unidad de Tiempo para (t)</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger id="timeUnit" className="text-base">
@@ -131,7 +131,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
 
             <div>
               <h3 className="text-xl font-semibold mb-3 text-foreground">
-                Puntos de Datos Observados (t, R) - Tiempo en {selectedTimeUnit || 'unidades'}
+                Puntos de Datos Observados (t en {selectedTimeUnit || 'unidades'}, R en personas)
               </h3>
               <div className="space-y-4 max-h-60 overflow-y-auto pr-2 rounded-md border border-input p-4 bg-background/50">
                 {fields.map((field, index) => (
@@ -146,7 +146,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                             <Input
                               id={`observedData.${index}.time`}
                               type="number"
-                              placeholder={`Tiempo (${selectedTimeUnit || 't'})`}
+                              placeholder={`t (${selectedTimeUnit || 'unidades'})`}
                               step="any"
                               {...timeField}
                               className="text-sm"
@@ -166,7 +166,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                             <Input
                               id={`observedData.${index}.value`}
                               type="number"
-                              placeholder="Propagación (R)"
+                              placeholder="R (personas)"
                               step="any"
                               {...valueField}
                               className="text-sm"
