@@ -114,7 +114,7 @@ export default function HomePage() {
       });
 
     } catch (error) {
-      console.error("Calculation error:", error);
+      console.error("Error de cálculo:", error);
       toast({
         title: "Error",
         description: "No se pudieron realizar los cálculos. Revisa la consola para más detalles.",
@@ -137,7 +137,7 @@ export default function HomePage() {
               WebkitTextFillColor: 'transparent',
             }}
         >
-          RumorSim
+          Viralitycs
         </h1>
         <p className="mt-2 text-lg text-muted-foreground">
           Modela y Visualiza la Dinámica de Propagación de Rumores
@@ -158,7 +158,7 @@ export default function HomePage() {
       </main>
 
       <footer className="mt-12 pt-8 border-t border-border text-center text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} RumorSim. Creado con Next.js y Tailwind CSS.</p>
+        <p>&copy; {new Date().getFullYear()} Viralitycs. Creado con Next.js y Tailwind CSS.</p>
         <p className="mt-1">Explora la dinámica de la propagación de información.</p>
       </footer>
     </div>
