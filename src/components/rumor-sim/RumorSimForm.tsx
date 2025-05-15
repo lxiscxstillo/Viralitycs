@@ -135,13 +135,13 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
               </h3>
               <div className="space-y-4 max-h-60 overflow-y-auto pr-2 rounded-md border border-input p-4 bg-background/50">
                 {fields.map((field, index) => (
-                  <div key={field.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-md shadow-sm">
+                  <div key={field.id} className="flex items-start md:items-center gap-3 p-3 bg-muted/30 rounded-md shadow-sm flex-col md:flex-row">
                     <FormField
                       control={form.control}
                       name={`observedData.${index}.time`}
                       render={({ field: timeField }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel htmlFor={`observedData.${index}.time`} className="sr-only">Tiempo (t)</FormLabel>
+                        <FormItem className="flex-1 w-full md:w-auto">
+                          <FormLabel htmlFor={`observedData.${index}.time`}>Tiempo (t)</FormLabel>
                            <FormControl>
                             <Input
                               id={`observedData.${index}.time`}
@@ -160,8 +160,8 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                       control={form.control}
                       name={`observedData.${index}.value`}
                       render={({ field: valueField }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel htmlFor={`observedData.${index}.value`} className="sr-only">Propagación (R)</FormLabel>
+                        <FormItem className="flex-1 w-full md:w-auto">
+                          <FormLabel htmlFor={`observedData.${index}.value`}>Propagación (R)</FormLabel>
                           <FormControl>
                             <Input
                               id={`observedData.${index}.value`}
@@ -181,7 +181,7 @@ export function RumorSimForm({ onSubmit, isCalculating, defaultValues }: RumorSi
                       variant="ghost"
                       size="icon"
                       onClick={() => remove(index)}
-                      className="text-destructive hover:text-destructive/80"
+                      className="text-destructive hover:text-destructive/80 self-center md:self-auto mt-2 md:mt-0"
                       aria-label="Eliminar punto de dato"
                     >
                       <Trash2 className="h-5 w-5" />
