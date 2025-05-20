@@ -2,14 +2,26 @@
 "use client";
 
 import type * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { RumorSimForm } from '@/components/rumor-sim/RumorSimForm';
 import { ResultsDisplay } from '@/components/rumor-sim/ResultsDisplay';
 import { RumorChart } from '@/components/rumor-sim/RumorChart';
-import type { RumorSimFormValues, CalculatedDataPoint, ObservedDataPoint } from '@/components/rumor-sim/types';
+import type { RumorSimFormValues, CalculatedDataPoint } from '@/components/rumor-sim/types';
 import { estimateKFlow } from '@/ai/flows/estimateK';
 import { useToast } from "@/hooks/use-toast";
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { EquationsInfo } from '@/components/rumor-sim/EquationsInfo';
+import { Info } from 'lucide-react';
 
 export default function HomePage() {
   const [kValue, setKValue] = useState<number | null>(null);
@@ -34,22 +46,22 @@ export default function HomePage() {
       });
       setKValue(k);
 
-      let maxTime = 50; 
+      let maxTime = 50;
       if (formData.observedData.length > 0) {
         maxTime = Math.max(...formData.observedData.map(p => p.time), 0) * 1.5;
       }
-      maxTime = Math.max(maxTime, 10); 
-      
+      maxTime = Math.max(maxTime, 10);
+
       const timeStep = Math.max(0.01, maxTime / 500);
 
       const analyticalSolution: CalculatedDataPoint[] = [];
       const numericalSolutionPoints: { time: number, value: number }[] = [];
 
       const A = (formData.N - formData.R0) / formData.R0;
-      if (formData.R0 <= 0 || A <= 0) {
+      if (formData.R0 <= 0 || A <= 0 || formData.N <= 0) {
          toast({
           title: "Error de Entrada",
-          description: "R0 debe ser positivo y menor que N para la solución analítica.",
+          description: "R0 debe ser positivo y menor que N. N debe ser positivo.",
           variant: "destructive",
         });
       } else {
@@ -58,14 +70,16 @@ export default function HomePage() {
           analyticalSolution.push({ time: t, analytical: R_t });
         }
       }
-      
+
       let R_n = formData.R0;
-      numericalSolutionPoints.push({ time: 0, value: R_n });
-      for (let t = 0; t < maxTime; t += timeStep) {
-        const dR_dt = k * R_n * (1 - R_n / formData.N);
-        R_n = R_n + timeStep * dR_dt;
-        R_n = Math.max(0, Math.min(R_n, formData.N));
-        numericalSolutionPoints.push({ time: t + timeStep, value: R_n });
+      if (formData.R0 > 0 && formData.N > 0) {
+        numericalSolutionPoints.push({ time: 0, value: R_n });
+        for (let t = 0; t < maxTime; t += timeStep) {
+          const dR_dt = k * R_n * (1 - R_n / formData.N);
+          R_n = R_n + timeStep * dR_dt;
+          R_n = Math.max(0, Math.min(R_n, formData.N));
+          numericalSolutionPoints.push({ time: t + timeStep, value: R_n });
+        }
       }
       
       const combinedData: CalculatedDataPoint[] = [];
@@ -103,10 +117,13 @@ export default function HomePage() {
       combinedData.sort((a,b) => a.time - b.time);
 
       setChartData(combinedData);
-      toast({
-        title: "Cálculo Completo",
-        description: `Tasa de propagación k estimada: ${k.toFixed(4)} (por ${formData.timeUnit === 'días' ? 'día' : formData.timeUnit.slice(0,-1)})`,
-      });
+      if ( (formData.R0 > 0 && A > 0 && formData.N > 0) || numericalSolutionPoints.length > 0 ) {
+        toast({
+          title: "Cálculo Completo",
+          description: `Tasa de propagación k estimada: ${k.toFixed(4)} (por ${formData.timeUnit === 'días' ? 'día' : formData.timeUnit.slice(0,-1)})`,
+        });
+      }
+
 
     } catch (error) {
       console.error("Error de cálculo:", error);
@@ -137,6 +154,26 @@ export default function HomePage() {
         <p className="mt-2 text-lg text-muted-foreground">
           Modela y Visualiza la Dinámica de Propagación de Rumores
         </p>
+        <div className="mt-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Info className="mr-2 h-4 w-4" />
+                Ecuaciones del Modelo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <EquationsInfo />
+               <DialogFooter className="sm:justify-start mt-4">
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cerrar
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </header>
 
       <main className="container mx-auto max-w-7xl space-y-8">
